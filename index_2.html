@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Mentiroso</title>
+<style>
+  :root{
+    --bg1:#1a0b2e;
+    --bg2:#3d1560;
+    --accent:#ff5da2;
+    --accent2:#7c3aed;
+    --gold:#ffd166;
+    --text:#fff;
+    --muted:#c9b8e0;
+    --card:#2a1450;
+    --danger:#ff4d6d;
+    --good:#3ddc97;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{
+    margin:0; padding:0; height:100%;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    background:linear-gradient(160deg,var(--bg1),var(--bg2) 60%,#521a6b);
+    background-attachment:fixed;
+    color:var(--text);
+    overscroll-behavior:none;
+    -webkit-user-select:none; user-select:none;
+  }
+  #app{
+    min-height:100vh;
+    min-height:100dvh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    padding:24px 18px 40px;
+  }
+  .screen{ width:100%; max-width:480px; display:none; flex-direction:column; gap:16px; animation:fadein .35s ease; }
+  .screen.active{ display:flex; }
+  @keyframes fadein{ from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:translateY(0);} }
+
+  h1.logo{
+    font-size:2.6rem;
+    text-align:center;
+    margin:6px 0 0;
+    letter-spacing:1px;
+    background:linear-gradient(90deg,var(--gold),var(--accent));
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    font-weight:800;
+  }
+  .subtitle{ text-align:center; color:var(--muted); margin:-8px 0 8px; font-size:.95rem; }
+
+  .card{
+    background:rgba(255,255,255,0.06);
+    border:1px solid rgba(255,255,255,0.12);
+    border-radius:20px;
+    padding:20px;
+    backdrop-filter:blur(6px);
+  }
+
+  label.field-label{ font-size:.85rem; color:var(--muted); margin-bottom:6px; display:block; text-transform:uppercase; letter-spacing:.05em; }
+
+  .stepper{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+  .stepper button{
+    width:52px; height:52px; border-radius:50%; border:none;
+    background:var(--accent2); color:#fff; font-size:1.6rem; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .stepper .count{ font-size:2.4rem; font-weight:800; min-width:70px; text-align:center; }
+
+  .cat-grid{ display:flex; flex-direction:column; gap:10px; }
+  .cat-item{
+    display:flex; align-items:center; justify-content:space-between;
+    background:rgba(255,255,255,0.05);
+    border:1.5px solid rgba(255,255,255,0.1);
+    border-radius:14px;
+    padding:13px 16px;
+    cursor:pointer;
+  }
+  .cat-item.selected{ border-color:var(--accent); background:rgba(255,93,162,0.15); }
+  .cat-item .cat-name{ display:flex; align-items:center; gap:10px; font-weight:600; font-size:1rem; }
+  .cat-item .emoji{ font-size:1.3rem; }
+  .cat-item .badge18{ font-size:.65rem; background:var(--danger); padding:2px 7px; border-radius:8px; margin-left:6px; font-weight:700; }
+  .checkbox{
+    width:24px; height:24px; border-radius:7px; border:2px solid var(--muted);
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .cat-item.selected .checkbox{ background:var(--accent); border-color:var(--accent); }
+  .checkbox svg{ display:none; width:15px; height:15px; }
+  .cat-item.selected .checkbox svg{ display:block; }
+
+  .btn{
+    border:none; border-radius:16px; padding:16px 20px; font-size:1.05rem; font-weight:700;
+    color:#fff; cursor:pointer; text-align:center; width:100%;
+  }
+  .btn-primary{ background:linear-gradient(90deg,var(--accent),var(--accent2)); box-shadow:0 8px 20px rgba(255,93,162,0.35); }
+  .btn-primary:disabled{ opacity:.4; box-shadow:none; }
+  .btn-secondary{ background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.18); }
+  .btn-ghost{ background:transparent; color:var(--muted); font-weight:600; padding:10px; }
+  .btn-danger{ background:linear-gradient(90deg,#ff4d6d,#c9184a); }
+
+  .hint{ color:var(--muted); font-size:.85rem; text-align:center; line-height:1.5; }
+
+  /* Pass screen */
+  .pass-card{
+    text-align:center;
+    padding:40px 24px;
+    border-radius:24px;
+    background:linear-gradient(160deg,var(--card),#1c0a3a);
+    border:1px solid rgba(255,255,255,0.1);
+  }
+  .player-name{
+    font-size:1.7rem; font-weight:800; margin:4px 0 2px;
+  }
+  .player-num{ color:var(--gold); font-size:.9rem; font-weight:700; letter-spacing:.08em; text-transform:uppercase; }
+  .pass-icon{ font-size:3.2rem; margin:10px 0; }
+
+  /* Reveal (question) screen */
+  .question-box{
+    padding:36px 22px;
+    border-radius:24px;
+    text-align:center;
+    background:linear-gradient(160deg,#3a1660,#1c0a3a);
+    border:1.5px solid var(--accent);
+    box-shadow:0 0 40px rgba(255,93,162,0.25);
+    min-height:180px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+  }
+  .question-cat{ color:var(--gold); font-size:.8rem; font-weight:700; text-transform:uppercase; letter-spacing:.08em; }
+  .question-text{ font-size:1.35rem; font-weight:700; line-height:1.4; }
+
+  .progress-dots{ display:flex; justify-content:center; gap:6px; flex-wrap:wrap; margin-top:4px; }
+  .dot{ width:9px; height:9px; border-radius:50%; background:rgba(255,255,255,0.2); }
+  .dot.done{ background:var(--good); }
+  .dot.current{ background:var(--gold); }
+
+  /* Vote/Reveal end */
+  .reveal-title{ text-align:center; font-size:1.6rem; font-weight:800; }
+  .liar-name{
+    text-align:center; font-size:2rem; font-weight:900; color:var(--danger);
+    text-shadow:0 0 20px rgba(255,77,109,0.5);
+  }
+  .qcompare{ display:flex; flex-direction:column; gap:12px; }
+  .qcompare .row{ background:rgba(255,255,255,0.06); border-radius:14px; padding:14px 16px; }
+  .qcompare .row .who{ font-size:.75rem; color:var(--muted); text-transform:uppercase; font-weight:700; letter-spacing:.05em; margin-bottom:4px; }
+  .qcompare .row.liar{ border:1px solid var(--danger); }
+  .qcompare .row.honest{ border:1px solid var(--good); }
+
+  footer{ margin-top:auto; padding-top:24px; text-align:center; color:rgba(255,255,255,0.35); font-size:.75rem; }
+
+  input[type=text]{
+    width:100%; padding:14px 16px; border-radius:14px; border:1.5px solid rgba(255,255,255,0.15);
+    background:rgba(255,255,255,0.05); color:#fff; font-size:1rem;
+  }
+  input[type=text]::placeholder{ color:rgba(255,255,255,0.35); }
+  .names-list{ display:flex; flex-direction:column; gap:8px; }
+  .name-row{ display:flex; gap:8px; align-items:center; }
+  .name-row .idx{ width:26px; text-align:center; color:var(--muted); font-weight:700; }
+
+  .answer-input{
+    width:100%; padding:16px 18px; border-radius:14px; border:1.5px solid rgba(255,255,255,0.18);
+    background:rgba(255,255,255,0.06); color:#fff; font-size:1.3rem; font-weight:700; font-family:inherit;
+    text-align:center;
+  }
+  .answer-input::placeholder{ color:rgba(255,255,255,0.35); font-weight:400; font-size:1.05rem; }
+
+  .answers-list{ display:flex; flex-direction:column; gap:10px; }
+  .answer-row{ background:rgba(255,255,255,0.06); border-radius:14px; padding:12px 16px; }
+  .answer-row .who{ font-size:.8rem; color:var(--gold); font-weight:700; margin-bottom:3px; }
+  .answer-row .ans{ font-size:1.02rem; line-height:1.4; }
+  .answer-row .ans.empty{ color:rgba(255,255,255,0.35); font-style:italic; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- SCREEN: HOME -->
+  <div class="screen active" id="screen-home">
+    <h1 class="logo">🕵️ MENTIROSO</h1>
+    <p class="subtitle">Todos responden con una sola palabra a la misma pregunta... menos uno. Descúbranlo.</p>
+
+    <div class="card">
+      <label class="field-label">Jugadores</label>
+      <div class="stepper">
+        <button id="btn-minus" type="button">−</button>
+        <div class="count" id="player-count">4</div>
+        <button id="btn-plus" type="button">+</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <label class="field-label">Nombres (opcional)</label>
+      <div class="names-list" id="names-list"></div>
+    </div>
+
+    <button class="btn btn-primary" id="btn-goto-categories">Elegir categorías →</button>
+
+    <p class="hint">Pásense un solo teléfono. Cada jugador ve su pregunta en privado, escribe su respuesta en una palabra y la oculta antes de pasarlo. Al final se leen todas en voz alta.</p>
+  </div>
+
+  <!-- SCREEN: CATEGORIES -->
+  <div class="screen" id="screen-categories">
+    <h1 class="logo" style="font-size:1.8rem;">Categorías</h1>
+    <p class="subtitle">Elige uno o varios temas</p>
+    <div class="card cat-grid" id="cat-grid"></div>
+    <button class="btn btn-primary" id="btn-start-game">🎮 Empezar partida</button>
+    <button class="btn btn-ghost" id="btn-back-home">← Volver</button>
+  </div>
+
+  <!-- SCREEN: PASS DEVICE -->
+  <div class="screen" id="screen-pass">
+    <div class="pass-card">
+      <div class="pass-icon">📱➡️</div>
+      <div class="player-num">Pásale el teléfono a</div>
+      <div class="player-name" id="pass-name">Jugador 1</div>
+      <p class="hint" style="margin-top:14px;">Nadie más debe ver la pantalla ahora.</p>
+    </div>
+    <button class="btn btn-primary" id="btn-reveal">Ya lo tengo yo, mostrar mi pregunta</button>
+    <div class="progress-dots" id="progress-dots"></div>
+  </div>
+
+  <!-- SCREEN: SHOW QUESTION + WRITE ANSWER -->
+  <div class="screen" id="screen-question">
+    <div class="question-box">
+      <div class="question-cat" id="q-cat">Categoría</div>
+      <div class="question-text" id="q-text">Pregunta...</div>
+    </div>
+    <input type="text" class="answer-input" id="answer-input" placeholder="Una sola palabra..." maxlength="30" autocomplete="off" autocapitalize="off" spellcheck="false">
+    <p class="hint">Responde con <b>una sola palabra</b>, sin que nadie te vea. Luego oculta la pantalla y pasa el teléfono. Al final se leerán todas en voz alta.</p>
+    <button class="btn btn-primary" id="btn-next-player">Guardar y pasar ➡️</button>
+  </div>
+
+  <!-- SCREEN: READ ANSWERS ALOUD -->
+  <div class="screen" id="screen-discuss">
+    <h1 class="logo" style="font-size:2rem;">📖 Lean las respuestas</h1>
+    <p class="subtitle">Alguien lee en voz alta lo que escribió cada jugador (en orden). Escuchen bien: uno tenía una pregunta distinta.</p>
+    <div class="question-box" style="padding:20px 18px; min-height:auto;">
+      <div class="question-cat">La pregunta era</div>
+      <div class="question-text" id="discuss-main-q" style="font-size:1.15rem;"></div>
+    </div>
+    <div class="card answers-list" id="answers-list"></div>
+    <div class="card">
+      <p style="margin:0; line-height:1.6;">Cuando terminen de leer, debatan y voten en persona quién creen que es el <b>mentiroso</b>. Luego toca el botón para revelar la verdad.</p>
+    </div>
+    <button class="btn btn-danger" id="btn-goto-reveal">🔎 Revelar al mentiroso</button>
+  </div>
+
+  <!-- SCREEN: REVEAL -->
+  <div class="screen" id="screen-reveal">
+    <h1 class="reveal-title">El mentiroso era...</h1>
+    <div class="liar-name" id="reveal-name">???</div>
+    <div class="card qcompare">
+      <div class="row honest">
+        <div class="who">✅ Pregunta del grupo</div>
+        <div id="reveal-main-q"></div>
+      </div>
+      <div class="row liar">
+        <div class="who">🎭 Pregunta del mentiroso</div>
+        <div id="reveal-liar-q"></div>
+      </div>
+    </div>
+    <div class="card answers-list" id="reveal-answers-list"></div>
+    <button class="btn btn-primary" id="btn-play-again">🔁 Otra ronda (misma gente)</button>
+    <button class="btn btn-secondary" id="btn-restart">🏠 Volver al inicio</button>
+  </div>
+
+  <footer>Mentiroso · juego de pasar el teléfono</footer>
+</div>
+
+<script>
+/* ---------------- QUESTION BANK ---------------- */
+// Each entry: { main: "...", odd: "..." } - similar theme, different enough that answers diverge.
+const CATEGORIES = [
+  {
+    id: "geografia", emoji:"🌍", name:"Geografía", adult:false,
+    pairs:[
+      {main:"¿En qué país crees que hay la cultura más interesante?", odd:"¿Qué país te parece el más caro?"},
+      {main:"Ciudad en la que te gustaría vivir.", odd:"Ciudad con los precios más altos, según tú."},
+      {main:"País al que seguro volverás algún día.", odd:"País al que seguro no volverás nunca."},
+      {main:"Lugar donde te sientes como en casa.", odd:"Lugar donde alguna vez te sentiste un extraño."},
+      {main:"País con la mejor comida, según tú.", odd:"País con el peor clima, según tú."},
+      {main:"País del que crees que viene la mejor música.", odd:"País cuyo idioma suena más bonito, según tú."},
+      {main:"Lugar al que irías ahora mismo si pudieras.", odd:"Lugar al que no irías ni gratis."},
+      {main:"País que crees que está sobrevalorado por los turistas.", odd:"País que crees que nadie valora lo suficiente."},
+      {main:"Ciudad ideal para una luna de miel.", odd:"Ciudad donde te casarías sin pensarlo dos veces."}
+    ]
+  },
+  {
+    id:"numeros", emoji:"🔢", name:"Números y hábitos", adult:false,
+    pairs:[
+      {main:"¿Cuántos minutos necesitas para despertarte y llegar a la puerta?", odd:"¿Cuántos correos sin leer tienes ahora mismo?"},
+      {main:"¿A qué edad crees que es mejor tener hijos?", odd:"¿A qué edad te gustaría jubilarte?"},
+      {main:"¿Cuántas horas duermes normalmente?", odd:"¿Cuántas tazas de café tomas al día?"},
+      {main:"¿Cuántos pares de zapatos tienes en casa?", odd:"¿Cuántas chaquetas tienes en tu armario?"},
+      {main:"¿A qué hora te acuestas normalmente?", odd:"¿A qué hora te despiertas en un día libre?"},
+      {main:"¿Cuántas veces te has mudado de casa en tu vida?", odd:"¿Cuántas ciudades has visitado en tu vida?"},
+      {main:"¿Cuántas veces al día revisas tu teléfono?", odd:"¿Cuántas apps tienes en tu teléfono?"},
+      {main:"¿Cuántas veces te has enamorado de verdad?", odd:"¿Cuántas veces te han roto el corazón?"},
+      {main:"¿Cuántos idiomas hablas?", odd:"¿Cuántos instrumentos musicales sabes tocar?"},
+      {main:"¿Cuántas horas a la semana ves series?", odd:"¿Cuántas horas a la semana pasas en redes sociales?"},
+      {main:"¿Cuántos mensajes sin responder tienes ahora mismo?", odd:"¿Cuántas notificaciones sin abrir tienes?"}
+    ]
+  },
+  {
+    id:"comida", emoji:"🍕", name:"Comida y bebidas", adult:false,
+    pairs:[
+      {main:"Comida que te recuerda a tu infancia.", odd:"Comida que cocinas más seguido."},
+      {main:"Bebida sin la que no empiezas el día.", odd:"Bebida que tomas antes de dormir."},
+      {main:"¿Cuántas veces a la semana comes comida rápida?", odd:"¿Cuántas veces a la semana cocinas en casa?"},
+      {main:"Producto que siempre tienes en tu refrigerador.", odd:"Producto que nunca tienes en casa."},
+      {main:"Comida que crees que está sobrevalorada.", odd:"Comida que crees que está subestimada."},
+      {main:"Comida que pedirías sin pensarlo en un restaurante nuevo.", odd:"Comida que nunca pedirías en un restaurante nuevo."},
+      {main:"¿Cuántos vasos de agua tomas al día?", odd:"¿Cuántas veces a la semana comes postre?"},
+      {main:"Ingrediente que no puede faltar en tu cocina.", odd:"Ingrediente que nunca compras."}
+    ]
+  },
+  {
+    id:"cine", emoji:"🎬", name:"Cine, música y cultura", adult:false,
+    pairs:[
+      {main:"Cantante o banda que escuchas más seguido.", odd:"Cantante o banda que escuchan tus padres."},
+      {main:"Película que puedes ver una y otra vez.", odd:"Película que te da vergüenza que te guste."},
+      {main:"¿Cuántas películas viste el mes pasado?", odd:"¿Cuántos libros leíste el año pasado?"},
+      {main:"Actor cuya actuación te fascina.", odd:"Actor que crees que está sobrevalorado."},
+      {main:"Serie que recomendarías sin dudar.", odd:"Serie que dejaste a la mitad."},
+      {main:"¿Cuántas veces has visto tu película favorita?", odd:"¿Cuántos capítulos seguidos de una serie ves normalmente?"},
+      {main:"Género de música que escuchas mientras limpias.", odd:"Género de música que escuchas en una fiesta."}
+    ]
+  },
+  {
+    id:"adultos", emoji:"🔞", name:"Solo adultos", adult:true,
+    pairs:[
+      {main:"¿A qué edad tuviste tu primera cita?", odd:"¿A qué edad tuviste tu primer beso?"},
+      {main:"¿A cuántas personas has besado en tu vida?", odd:"¿Cuántas personas te han escrito primero en un chat?"},
+      {main:"¿Cuánto duró tu relación más larga (en meses o años)?", odd:"¿Cuánto duró tu relación más corta?"},
+      {main:"Cualidad más importante para ti en una pareja.", odd:"Cualidad que más te molesta en una pareja."},
+      {main:"¿Cuántas veces te han terminado a ti?", odd:"¿Cuántas veces has terminado tú una relación?"},
+      {main:"Lugar donde tuviste tu cita más incómoda.", odd:"Lugar donde tuviste tu cita más romántica."},
+      {main:"¿Cuántas relaciones serias has tenido?", odd:"¿Cuántas veces has usado una app de citas?"},
+      {main:"Red flag que ignoraste una vez por amor.", odd:"Red flag que detectas a la primera ahora."}
+    ]
+  },
+  {
+    id:"trabajo", emoji:"💼", name:"Trabajo y estudios", adult:false,
+    pairs:[
+      {main:"¿Cuántas horas al día trabajas de forma realmente productiva?", odd:"¿Cuántas horas al día pasas en reuniones?"},
+      {main:"¿Cuántos trabajos has tenido en tu vida?", odd:"¿Cuántas veces te han ascendido?"},
+      {main:"Materia escolar que se te daba más fácil.", odd:"Materia escolar que odiabas."},
+      {main:"Profesión que crees que está más subestimada.", odd:"Profesión a la que le pagan más de lo que debería."},
+      {main:"¿Cuántos años llevas en tu trabajo actual?", odd:"¿Cuántas veces has cambiado de carrera o de estudios?"}
+    ]
+  },
+  {
+    id:"telefono", emoji:"📱", name:"Teléfono y redes sociales", adult:false,
+    pairs:[
+      {main:"¿Cuántos seguidores tienes en tu red social más activa?", odd:"¿A cuántas personas sigues tú?"},
+      {main:"App en la que pasas más tiempo.", odd:"App que hace tiempo quieres borrar."},
+      {main:"¿Cuántas horas de pantalla tuviste ayer?", odd:"¿Cuántas veces desbloqueaste tu teléfono ayer?"},
+      {main:"Red social donde pasas más tiempo.", odd:"Red social que menos usas."}
+    ]
+  },
+  {
+    id:"sobreti", emoji:"🐾", name:"Sobre ti", adult:false,
+    pairs:[
+      {main:"Animal que te gustaría tener de mascota.", odd:"Animal que te da miedo."},
+      {main:"Parte de tu cuerpo que más te gusta.", odd:"Parte de tu cuerpo que te da pena."},
+      {main:"¿Cuántas veces a la semana haces ejercicio?", odd:"¿Cuántas veces a la semana comes dulce?"},
+      {main:"¿Cuántos tatuajes tienes (o te gustaría tener)?", odd:"¿Cuántas cicatrices tienes?"},
+      {main:"Color que más usas en tu ropa.", odd:"Color que evitas en tu ropa."}
+    ]
+  }
+];
+
+/* ---------------- STATE ---------------- */
+let state = {
+  playerCount: 4,
+  names: [],
+  selectedCategories: new Set(["general"]),
+  players: [],
+  answers: [],
+  currentIdx: 0,
+  liarIdx: -1,
+  mainQ: "",
+  oddQ: "",
+  catName: ""
+};
+
+/* ---------------- HELPERS ---------------- */
+function $(id){ return document.getElementById(id); }
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  $(id).classList.add("active");
+  window.scrollTo(0,0);
+}
+function randInt(n){ return Math.floor(Math.random()*n); }
+
+/* ---------------- HOME SCREEN ---------------- */
+function renderNamesInputs(){
+  const list = $("names-list");
+  list.innerHTML = "";
+  for(let i=0;i<state.playerCount;i++){
+    const row = document.createElement("div");
+    row.className = "name-row";
+    const idx = document.createElement("div");
+    idx.className="idx";
+    idx.textContent = (i+1)+".";
+    const input = document.createElement("input");
+    input.type="text";
+    input.placeholder = "Jugador "+(i+1);
+    input.value = state.names[i] || "";
+    input.maxLength = 20;
+    input.addEventListener("input", ()=>{ state.names[i] = input.value; });
+    row.appendChild(idx);
+    row.appendChild(input);
+    list.appendChild(row);
+  }
+}
+$("btn-minus").addEventListener("click", ()=>{
+  if(state.playerCount>3){ state.playerCount--; $("player-count").textContent=state.playerCount; renderNamesInputs(); }
+});
+$("btn-plus").addEventListener("click", ()=>{
+  if(state.playerCount<12){ state.playerCount++; $("player-count").textContent=state.playerCount; renderNamesInputs(); }
+});
+renderNamesInputs();
+
+$("btn-goto-categories").addEventListener("click", ()=>{
+  showScreen("screen-categories");
+});
+
+/* ---------------- CATEGORIES SCREEN ---------------- */
+function renderCategories(){
+  const grid = $("cat-grid");
+  grid.innerHTML = "";
+  CATEGORIES.forEach(cat=>{
+    const item = document.createElement("div");
+    item.className = "cat-item" + (state.selectedCategories.has(cat.id) ? " selected":"");
+    item.innerHTML = `
+      <div class="cat-name"><span class="emoji">${cat.emoji}</span>${cat.name}${cat.adult ? '<span class="badge18">+18</span>' : ''}</div>
+      <div class="checkbox"><svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3"><path d="M4 12l5 5L20 6"/></svg></div>
+    `;
+    item.addEventListener("click", ()=>{
+      if(state.selectedCategories.has(cat.id)){
+        state.selectedCategories.delete(cat.id);
+      } else {
+        state.selectedCategories.add(cat.id);
+      }
+      renderCategories();
+    });
+    grid.appendChild(item);
+  });
+}
+renderCategories();
+$("btn-back-home").addEventListener("click", ()=> showScreen("screen-home"));
+
+$("btn-start-game").addEventListener("click", ()=>{
+  if(state.selectedCategories.size===0){
+    alert("Elige al menos una categoría 🙂");
+    return;
+  }
+  startGame();
+});
+
+/* ---------------- GAME LOGIC ---------------- */
+function startGame(){
+  // Build player list
+  state.players = [];
+  for(let i=0;i<state.playerCount;i++){
+    const nm = (state.names[i] && state.names[i].trim()) ? state.names[i].trim() : ("Jugador "+(i+1));
+    state.players.push(nm);
+  }
+  // Pick random category among selected
+  const pool = CATEGORIES.filter(c=>state.selectedCategories.has(c.id));
+  const cat = pool[randInt(pool.length)];
+  const pair = cat.pairs[randInt(cat.pairs.length)];
+  state.mainQ = pair.main;
+  state.oddQ = pair.odd;
+  state.catName = cat.name;
+  state.liarIdx = randInt(state.playerCount);
+  state.currentIdx = 0;
+  state.answers = new Array(state.playerCount).fill("");
+  goToPass();
+}
+
+function goToPass(){
+  if(state.currentIdx >= state.playerCount){
+    renderAnswersList();
+    showScreen("screen-discuss");
+    return;
+  }
+  $("pass-name").textContent = state.players[state.currentIdx];
+  renderDots();
+  showScreen("screen-pass");
+}
+
+function renderAnswersList(){
+  $("discuss-main-q").textContent = state.mainQ;
+  const wrap = $("answers-list");
+  wrap.innerHTML = "";
+  state.players.forEach((name, i)=>{
+    const row = document.createElement("div");
+    row.className = "answer-row";
+    const ans = (state.answers[i] || "").trim();
+    row.innerHTML = `
+      <div class="who">${(i+1)}. ${name}</div>
+      <div class="ans${ans ? "" : " empty"}">${ans ? escapeHtml(ans) : "(sin respuesta escrita)"}</div>
+    `;
+    wrap.appendChild(row);
+  });
+}
+
+function escapeHtml(str){
+  const d = document.createElement("div");
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+function renderDots(){
+  const wrap = $("progress-dots");
+  wrap.innerHTML = "";
+  for(let i=0;i<state.playerCount;i++){
+    const d = document.createElement("div");
+    d.className = "dot" + (i<state.currentIdx ? " done" : (i===state.currentIdx ? " current":""));
+    wrap.appendChild(d);
+  }
+}
+
+$("btn-reveal").addEventListener("click", ()=>{
+  const isLiar = state.currentIdx === state.liarIdx;
+  $("q-cat").textContent = state.catName + (isLiar ? "" : "");
+  $("q-text").textContent = isLiar ? state.oddQ : state.mainQ;
+  $("answer-input").value = state.answers[state.currentIdx] || "";
+  showScreen("screen-question");
+  setTimeout(()=>$("answer-input").focus(), 50);
+});
+
+$("btn-next-player").addEventListener("click", ()=>{
+  // Enforce a single word: keep only the first whitespace-separated token.
+  const raw = $("answer-input").value.trim();
+  const oneWord = raw.split(/\s+/)[0] || "";
+  state.answers[state.currentIdx] = oneWord;
+  state.currentIdx++;
+  goToPass();
+});
+
+/* ---------------- DISCUSS -> REVEAL ---------------- */
+$("btn-goto-reveal").addEventListener("click", ()=>{
+  $("reveal-name").textContent = state.players[state.liarIdx];
+  $("reveal-main-q").textContent = state.mainQ;
+  $("reveal-liar-q").textContent = state.oddQ;
+
+  const wrap = $("reveal-answers-list");
+  wrap.innerHTML = "";
+  state.players.forEach((name, i)=>{
+    const isLiar = i === state.liarIdx;
+    const ans = (state.answers[i] || "").trim();
+    const row = document.createElement("div");
+    row.className = "answer-row" + (isLiar ? " liar" : "");
+    if(isLiar) row.style.border = "1px solid var(--danger)";
+    row.innerHTML = `
+      <div class="who">${isLiar ? "🎭 " : ""}${(i+1)}. ${name}${isLiar ? " (el mentiroso)" : ""}</div>
+      <div class="ans${ans ? "" : " empty"}">${ans ? escapeHtml(ans) : "(sin respuesta escrita)"}</div>
+    `;
+    wrap.appendChild(row);
+  });
+
+  showScreen("screen-reveal");
+});
+
+$("btn-play-again").addEventListener("click", ()=>{
+  // same players, new question, possibly new liar
+  const pool = CATEGORIES.filter(c=>state.selectedCategories.has(c.id));
+  const cat = pool[randInt(pool.length)];
+  const pair = cat.pairs[randInt(cat.pairs.length)];
+  state.mainQ = pair.main;
+  state.oddQ = pair.odd;
+  state.catName = cat.name;
+  state.liarIdx = randInt(state.playerCount);
+  state.currentIdx = 0;
+  state.answers = new Array(state.playerCount).fill("");
+  goToPass();
+});
+
+$("btn-restart").addEventListener("click", ()=>{
+  showScreen("screen-home");
+});
+</script>
+</body>
+</html>
